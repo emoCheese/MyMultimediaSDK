@@ -1,0 +1,23 @@
+# Build output
+output/build/
+output/sdk/
+output/dist/
+output/*.tar.gz
+output/*.zip
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
