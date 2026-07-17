@@ -122,6 +122,20 @@ def build(args):
          f"done"],
         check=False)
 
+    # Copy GStreamer tools (gst-plugin-scanner, gst-inspect, etc.)
+    run(["bash", "-c",
+         f"cp -r {gst_install}/usr/local/bin {sdk_dir}/bin 2>/dev/null || true"],
+        check=False)
+    run(["bash", "-c",
+         f"cp -r {gst_install}/usr/local/libexec {sdk_dir}/libexec 2>/dev/null || true"],
+        check=False)
+    # Set RPATH on scanner so it finds SDK libs
+    for tool in ["gst-plugin-scanner", "gst-inspect-1.0", "gst-launch-1.0"]:
+        run(["bash", "-c",
+             f"patchelf --set-rpath '$ORIGIN/../lib' {sdk_dir}/libexec/gstreamer-1.0/{tool} 2>/dev/null || "
+             f"patchelf --set-rpath '$ORIGIN/../lib' {sdk_dir}/bin/{tool} 2>/dev/null || true"],
+            check=False)
+
     print("  Generating CMake config...")
     cmake_template = PROJECT_ROOT / "cmake" / "MultimediaSDKConfig.cmake.in"
     cmake_output = sdk_dir / "cmake" / "MultimediaSDKConfig.cmake"
