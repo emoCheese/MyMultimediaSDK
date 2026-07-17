@@ -6,6 +6,50 @@ MultimediaSDK 是一个跨平台精简多媒体 SDK，基于 GStreamer + FFmpeg 
 
 **核心原则：自包含、最小裁剪、跨平台统一。**
 
+## 克隆与初始化
+
+### 首次克隆
+
+```bash
+git clone --recurse-submodules <仓库地址> MultimediaSDK
+cd MultimediaSDK
+```
+
+GStreamer 和 FFmpeg 作为 git submodule 管理，使用 `--recurse-submodules` 一次性拉取。
+
+### 更新 submodule
+
+```bash
+git submodule update --init --recursive
+```
+
+如果只需要最新代码（不需要完整历史），可用浅克隆加速：
+
+```bash
+git submodule update --init --depth 1
+```
+
+### 构建前必须应用补丁
+
+`patches/gstreamer/` 包含对 GStreamer 上游源码的必要修改。每次克隆或更新 submodule 后必须重新应用：
+
+```bash
+cd gstreamer
+git checkout .                          # 还原已应用的补丁（如果有）
+git apply ../patches/gstreamer/*.patch
+cd ..
+```
+
+> 未应用补丁直接构建会失败。如果 `gstreamer/` 目录没有对应源码被修改的记录，补丁应用时会自动跳过。
+
+### 推送前检查清单
+
+1. 工作区干净：`git status` → 无未提交文件
+2. gstreamer submodule 干净：`cd gstreamer && git status` → `nothing to commit, clean`
+3. 构建验证：`python3 build.py --clean`
+4. 冒烟测试：`cd tests/smoke && bash build.sh`
+5. 补丁文件与当前 submodule 版本匹配：`cd gstreamer && git apply --check ../patches/gstreamer/*.patch`
+
 ## 技术栈
 
 | 项 | 选型 |
@@ -264,8 +308,11 @@ git fetch
 git checkout <new-tag-or-commit>
 cd ..
 # 重新应用 patches/gstreamer/ 下的补丁
-# 重新构建: python3 build.py --clean
+git add gstreamer
+git commit -m "chore: update GStreamer to <version>"
 ```
+
+> 更新后检查补丁是否仍适用：`cd gstreamer && git apply --check ../patches/gstreamer/*.patch`
 
 ### 更新 FFmpeg 版本
 

@@ -41,17 +41,33 @@ pip3 install 'meson>=1.4'
 ### 1. 克隆仓库
 
 ```bash
+# 首次克隆（包含 submodule）
 git clone --recurse-submodules <仓库地址> MultimediaSDK
 cd MultimediaSDK
+
+# 如果已是完整浅克隆，使用以下指令加速
+git submodule update --init --depth 1
 ```
 
-GStreamer 和 FFmpeg 作为 git submodule 管理，首次克隆需 `--recurse-submodules`。如果已经克隆但没有拉取 submodule：
+GStreamer 和 FFmpeg 使用 git submodule 管理。如果已经克隆但忘记拉取 submodule：
 
 ```bash
 git submodule update --init --recursive
 ```
 
-### 2. 构建
+### 2. 应用补丁
+
+构建前需将 `patches/gstreamer/` 下的补丁应用到 GStreamer 源码（修复 docs 在裁剪构建中的兼容性）：
+
+```bash
+cd gstreamer
+git apply ../patches/gstreamer/*.patch
+cd ..
+```
+
+> 每次更新 GStreamer submodule 后必须重新应用补丁。
+
+### 3. 构建
 
 ```bash
 # 自动检测当前平台
@@ -70,7 +86,7 @@ python3 build.py --target linux-x64 --package
 python3 build.py --target linux-x64 --clean
 ```
 
-### 3. 产物位置
+### 4. 产物位置
 
 ```
 output/sdk/<target>/
@@ -214,6 +230,60 @@ isomp4 = true
 
 ```bash
 python3 build.py --clean
+```
+
+## 贡献指南
+
+### 初始化开发环境
+
+```bash
+# 全量克隆（含 submodule）
+git clone --recurse-submodules git@github.com:<your-org>/MultimediaSDK.git
+cd MultimediaSDK
+
+# 应用 GStreamer 补丁
+cd gstreamer
+git apply ../patches/gstreamer/*.patch
+cd ..
+
+# 构建 SDK
+python3 build.py
+```
+
+### 提交流程
+
+```bash
+# 确保工作区干净
+git status
+
+# 如果修改了 GStreamer submodule 内文件，先提交到 submodule
+# 然后更新主仓库的 submodule 指针
+# （通常不直接修改 gstreamer/，而是通过 patches/ 管理）
+
+# 如果工作区涉及 gstreamer/ 的 dirty 状态
+cd gstreamer
+git checkout .              # 还原 submodule 修改
+git checkout <original-sha> # 或恢复为原始提交
+cd ..
+git add -A
+git commit -m "feat: your change description"
+
+# 推送前检查
+python3 build.py --clean    # 确保构建通过
+cd tests/smoke && bash build.sh  # 确保测试通过
+```
+
+### 补丁管理
+
+对 GStreamer 源码的修改请放入 `patches/gstreamer/`，不要直接提交 submodule 内变更：
+
+```bash
+# 生成补丁
+cd gstreamer
+git diff > ../patches/gstreamer/003-my-fix.patch
+cd ..
+git add patches/gstreamer/003-my-fix.patch
+git commit -m "fix: add patch for ..."
 ```
 
 ## 许可证
