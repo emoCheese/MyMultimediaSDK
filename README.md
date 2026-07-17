@@ -1,41 +1,107 @@
 # MultimediaSDK
 
-Cross-platform multimedia SDK providing RTSP streaming, H.264 decoding, and MP4 recording based on GStreamer + FFmpeg.
+基于 GStreamer + FFmpeg 源码构建的跨平台精简多媒体 SDK，提供 RTSP 拉流、H.264 解码和 MP4 录制能力。
 
-## Features
+## 功能
 
-- RTSP pull (TCP/UDP) via GStreamer rtspsrc
-- H.264 decode (CPU: avdec_h264, GPU: D3D11VA / VAAPI / NVDEC)
-- MP4 lossless recording (remux, no re-encoding)
-- Hardware decode auto-detection at runtime
-- Self-contained build from source (no system GStreamer/FFmpeg required)
+- **RTSP 拉流**（TCP/UDP）— GStreamer rtspsrc
+- **H.264 解码** — CPU（avdec_h264）、GPU（D3D11VA / VAAPI / NVDEC），运行时自动选择最优后端
+- **MP4 无损录制** — Remux 模式，不重新编码，mp4mux + filesink
+- **自包含构建** — 不依赖系统安装的 GStreamer 或 FFmpeg，全部从源码编译
 
-## Supported Platforms
+## 支持平台
 
-| Platform | Minimum OS | Compiler |
-|----------|-----------|----------|
+| 平台 | 最低系统要求 | 编译器 |
+|------|-------------|--------|
 | Linux x64 | Ubuntu 20.04+ | GCC 9.4+ |
 | Linux ARM64 | Ubuntu 20.04+ | aarch64-linux-gnu |
 | Windows x64 | Windows 10 / Server 2019+ | MSVC 2019+ |
 
-## Quick Start
+## 环境要求
 
-### Build from source
+### Linux
 
 ```bash
-git clone --recurse-submodules https://github.com/example/MultimediaSDK.git
-cd MultimediaSDK
+# Ubuntu 20.04+
+sudo apt install build-essential meson ninja-build cmake \
+    pkg-config python3 python3-pip git nasm yasm bison flex \
+    libglib2.0-dev libmount-dev libselinux1-dev zlib1g-dev
 
-# Build (auto-detect platform)
-python3 build.py
-
-# Or specify target explicitly
-python3 build.py --target linux-x64 --package
+pip3 install 'meson>=1.4'
 ```
 
-### Using the SDK
+### Windows
+
+- Visual Studio 2019+（含 C++ 桌面开发工作负载）
+- Python 3 + `pip install meson ninja`
+- nasm（放入 PATH 或使用 vcpkg）
+
+## 从源码构建
+
+### 1. 克隆仓库
+
+```bash
+git clone --recurse-submodules <仓库地址> MultimediaSDK
+cd MultimediaSDK
+```
+
+GStreamer 和 FFmpeg 作为 git submodule 管理，首次克隆需 `--recurse-submodules`。如果已经克隆但没有拉取 submodule：
+
+```bash
+git submodule update --init --recursive
+```
+
+### 2. 构建
+
+```bash
+# 自动检测当前平台
+python3 build.py
+
+# 指定目标平台
+python3 build.py --target linux-x64
+
+# 交叉编译 ARM
+python3 build.py --target linux-arm64
+
+# 构建并打包
+python3 build.py --target linux-x64 --package
+
+# 清理后重新构建
+python3 build.py --target linux-x64 --clean
+```
+
+### 3. 产物位置
+
+```
+output/sdk/<target>/
+├── include/          # 头文件（GStreamer、GLib、FFmpeg）
+├── lib/              # 静态库（.a）
+├── plugins/          # GStreamer 动态插件（.so/.dll）
+└── cmake/
+    └── MultimediaSDKConfig.cmake
+```
+
+打包后的压缩包在 `output/dist/` 下：
+
+```
+MultimediaSDK-1.0.0-linux-x64.tar.gz
+MultimediaSDK-1.0.0-linux-x64.sha256
+```
+
+---
+
+## 使用 SDK
+
+### CMake 集成
+
+将 SDK 压缩包解压到项目目录，在 `CMakeLists.txt` 中：
 
 ```cmake
+cmake_minimum_required(VERSION 3.16)
+project(MyApp)
+
+# 指定 SDK 路径（解压后的目录）
+set(MultimediaSDK_DIR "/path/to/MultimediaSDK-1.0.0-linux-x64/cmake")
 find_package(MultimediaSDK REQUIRED)
 
 add_executable(my_app main.c)
@@ -43,51 +109,113 @@ target_link_libraries(my_app
     MultimediaSDK::gstreamer
     MultimediaSDK::gstvideo
     MultimediaSDK::gstapp
+    MultimediaSDK::gstrtp
 )
 ```
+
+### 代码示例：RTSP 拉流录制为 MP4
 
 ```c
 #include <gst/gst.h>
 
 int main(int argc, char *argv[]) {
     gst_init(&argc, &argv);
+
+    const char *url = "rtsp://192.168.1.100:554/stream";
+    const char *output = "/tmp/output.mp4";
+
+    /* 方式 1：GStreamer 命令行语法（开发/调试推荐） */
     GstElement *pipeline = gst_parse_launch(
-        "rtspsrc location=rtsp://... ! rtph264depay ! h264parse ! "
-        "avdec_h264 ! mp4mux ! filesink location=output.mp4",
+        "rtspsrc location=rtsp://192.168.1.100:554/stream latency=0 "
+        "protocols=tcp ! "
+        "rtph264depay ! h264parse ! avdec_h264 ! "
+        "mp4mux ! filesink location=/tmp/output.mp4",
         NULL
     );
+
+    /* 方式 2：逐个元素构建（生产推荐，便于错误处理） */
+    /*
+    GstElement *pipeline = gst_pipeline_new("rtsp-to-mp4");
+    GstElement *src    = gst_element_factory_make("rtspsrc",    "source");
+    GstElement *depay  = gst_element_factory_make("rtph264depay","depay");
+    GstElement *parse  = gst_element_factory_make("h264parse",  "parser");
+    GstElement *dec    = gst_element_factory_make("avdec_h264", "decoder");
+    GstElement *mux    = gst_element_factory_make("mp4mux",     "muxer");
+    GstElement *sink   = gst_element_factory_make("filesink",   "sink");
+
+    g_object_set(src,  "location",  url,    NULL);
+    g_object_set(sink, "location",  output, NULL);
+
+    gst_bin_add_many(GST_BIN(pipeline), src, depay, parse, dec, mux, sink, NULL);
+    gst_element_link_many(depay, parse, dec, mux, sink, NULL);
+    g_signal_connect(src, "pad-added", G_CALLBACK(on_pad_added), depay);
+    */
+
     gst_element_set_state(pipeline, GST_STATE_PLAYING);
-    g_main_loop_run(g_main_loop_new(NULL, FALSE));
+
+    GMainLoop *loop = g_main_loop_new(NULL, FALSE);
+    g_main_loop_run(loop);
+
+    gst_element_set_state(pipeline, GST_STATE_NULL);
+    gst_object_unref(pipeline);
+    g_main_loop_unref(loop);
     return 0;
 }
 ```
 
-## SDK Layout
+> **GPU 硬解：** 将 `avdec_h264` 替换为对应的 GPU 解码器元素即可：
+> - Windows D3D11VA：`d3d11h264dec`
+> - Linux VAAPI：`vah264dec`
+> - Linux NVDEC：`nvh264dec`
+>
+> 也可在代码中运行时检测可用性，自动选择最优后端。
 
-```
-MultimediaSDK-1.0.0-linux-x64/
-├── include/    # GStreamer, GLib, FFmpeg headers
-├── lib/        # Static libraries (.a)
-├── plugins/    # GStreamer dynamic plugins (.so/.dll)
-└── cmake/      # CMake config (find_package)
-```
+### 可用的 CMake 目标
 
-## Customization
+| 目标 | 说明 |
+|------|------|
+| `MultimediaSDK::gstreamer` | GStreamer 核心 |
+| `MultimediaSDK::gstbase` | 基础工具库 |
+| `MultimediaSDK::gstvideo` | 视频类型/缓冲区 |
+| `MultimediaSDK::gstapp` | AppSrc/AppSink |
+| `MultimediaSDK::gstrtp` | RTP 支持 |
+| `MultimediaSDK::glib` | GLib |
+| `MultimediaSDK::gobject` | GObject |
+| `MultimediaSDK::avcodec` | FFmpeg 编解码 |
+| `MultimediaSDK::avformat` | FFmpeg 解复用/复用 |
+| `MultimediaSDK::avutil` | FFmpeg 工具 |
+| `MultimediaSDK::all` | 以上全部 |
 
-Edit `config/modules.ini` to enable/disable modules:
+---
+
+## 自定义裁剪
+
+编辑 `config/modules.ini`，按需开启或关闭模块：
 
 ```ini
+# 仅 CPU 解码，关闭所有 GPU 后端
 [plugins.bad]
-d3d11 = false      # Disable D3D11VA
-va = false         # Disable VAAPI
-nvcodec = false    # Disable NVDEC
+d3d11 = false
+va = false
+nvcodec = false
 
+# 仅 H.264 解码（去掉 HEVC）
 [ffmpeg]
-decoders = h264    # CPU-only H.264 decode
+decoders = h264
+
+# 关闭 RTSP，仅保留本地 MP4 解复用
+[plugins.good]
+rtsp = false
+rtp = false
+isomp4 = true
 ```
 
-Then rebuild: `python3 build.py --clean`
+修改后重新构建：
 
-## License
+```bash
+python3 build.py --clean
+```
 
-GStreamer and FFmpeg components are under their respective licenses (LGPL/GPL).
+## 许可证
+
+GStreamer 和 FFmpeg 组件遵循各自的许可证（LGPL / GPL）。使用时请注意许可证合规性。
