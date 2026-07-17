@@ -1,0 +1,6 @@
+[submodule "gstreamer"]
+	path = gstreamer
+	url = https://gitlab.freedesktop.org/gstreamer/gstreamer.git
+[submodule "ffmpeg-7.1.5"]
+	path = ffmpeg-7.1.5
+	url = https://github.com/FFmpeg/FFmpeg.git

@@ -1,7 +1,3 @@
-# Source code (managed as git submodules)
-gstreamer/
-ffmpeg-7.1.5/
-
 # Build output
 output/build/
 output/sdk/
