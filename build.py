@@ -131,10 +131,10 @@ def build(args):
 
     # Copy GStreamer tools (gst-plugin-scanner, gst-inspect, etc.)
     run(["bash", "-c",
-         f"cp -r {gst_install}/usr/local/bin {sdk_dir}/bin 2>/dev/null || true"],
+         f"mkdir -p {sdk_dir}/bin && cp -r {gst_install}/usr/local/bin/. {sdk_dir}/bin/ 2>/dev/null || true"],
         check=False)
     run(["bash", "-c",
-         f"cp -r {gst_install}/usr/local/libexec {sdk_dir}/libexec 2>/dev/null || true"],
+         f"mkdir -p {sdk_dir}/libexec && cp -r {gst_install}/usr/local/libexec/. {sdk_dir}/libexec/ 2>/dev/null || true"],
         check=False)
     # Set RPATH on scanner/tools:
     #   libexec/gstreamer-1.0/ → $ORIGIN/../../lib  (../../lib = lib/)
