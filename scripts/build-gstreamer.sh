@@ -76,6 +76,16 @@ enable_if_needed "gst-plugins-bad" "d3d11"        "plugins.bad" "d3d11"
 enable_if_needed "gst-plugins-bad" "va"           "plugins.bad" "va"
 enable_if_needed "gst-plugins-bad" "nvcodec"      "plugins.bad" "nvcodec"
 
+# --- gst-plugins-base: always-enable essential utilities ---
+MESON_OPTIONS+=(
+    "-Dgst-plugins-base:playback=enabled"
+    "-Dgst-plugins-base:videoconvertscale=enabled"
+    "-Dgst-plugins-base:app=enabled"
+    "-Dgst-plugins-base:tcp=enabled"
+    "-Dgst-plugins-base:audioconvert=enabled"
+    "-Dgst-plugins-base:audioresample=enabled"
+)
+
 # --- libav ---
 if [ "$(parse_ini_bool libav enabled)" = "true" ]; then
     MESON_OPTIONS+=("-Dlibav=enabled")
