@@ -99,13 +99,27 @@ def build(args):
     run(["bash", "-c",
          f"find {gst_install} {ffmpeg_install} -name '*.a' -exec cp {{}} {sdk_dir}/lib/ \\; 2>/dev/null || true"],
         check=False)
+    # Copy core .so + SONAME symlinks (.so.0, .so.0.*), preserve symlinks with -d
     run(["bash", "-c",
-         f"find {gst_install} -name '*.so' -not -path '*/gstreamer-1.0/*' -exec cp {{}} {sdk_dir}/lib/ \\; 2>/dev/null || true"],
+         f"find {gst_install} -name '*.so' -not -path '*/gstreamer-1.0/*' -exec cp -d {{}} {sdk_dir}/lib/ \\; 2>/dev/null || true"],
+        check=False)
+    run(["bash", "-c",
+         f"find {gst_install} -name '*.so.*' -not -path '*/gstreamer-1.0/*' -exec cp -d {{}} {sdk_dir}/lib/ \\; 2>/dev/null || true"],
         check=False)
 
     (sdk_dir / "plugins").mkdir(exist_ok=True)
+    # Copy plugin .so + SONAME symlinks, preserve symlinks
     run(["bash", "-c",
-         f"find {gst_install} -path '*/gstreamer-1.0/*.so' -exec cp {{}} {sdk_dir}/plugins/ \\; 2>/dev/null || true"],
+         f"find {gst_install} -path '*/gstreamer-1.0/*.so' -not -name '*.so.*' -exec cp -d {{}} {sdk_dir}/plugins/ \\; 2>/dev/null || true"],
+        check=False)
+    run(["bash", "-c",
+         f"find {gst_install} -path '*/gstreamer-1.0/*.so.*' -exec cp -d {{}} {sdk_dir}/plugins/ \\; 2>/dev/null || true"],
+        check=False)
+    # Set RPATH on plugins: $ORIGIN/../lib so they find our SDK's libraries
+    run(["bash", "-c",
+         f"for f in {sdk_dir}/plugins/*.so; do "
+         f"  patchelf --set-rpath '\\$ORIGIN/../lib' \"$f\" 2>/dev/null || true; "
+         f"done"],
         check=False)
 
     print("  Generating CMake config...")

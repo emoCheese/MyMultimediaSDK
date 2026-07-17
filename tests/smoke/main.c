@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 
     GError *error = NULL;
     GstElement *pipeline = gst_parse_launch(
-        "videotestsrc num-buffers=1 ! fakesink", &error);
+        "fakesrc num-buffers=1 ! fakesink", &error);
     if (pipeline && !error) {
         printf("  [OK]    Pipeline created successfully\n");
         gst_object_unref(pipeline);
