@@ -1,3 +1,0 @@
-/home/fox2/tmp/MultimediaSDK/tests/smoke/build/CMakeFiles/smoke_test.dir
-/home/fox2/tmp/MultimediaSDK/tests/smoke/build/CMakeFiles/edit_cache.dir
-/home/fox2/tmp/MultimediaSDK/tests/smoke/build/CMakeFiles/rebuild_cache.dir
