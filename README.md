@@ -108,9 +108,22 @@ MultimediaSDK-1.0.0-linux-x64.sha256
 
 ## 使用 SDK
 
+### 解压 SDK
+
+构建完成后，SDK 产物位于 `output/sdk/<target>/`。若已使用 `--package` 打包，产物在 `output/dist/` 下：
+
+```bash
+# Linux
+tar xzf output/dist/MultimediaSDK-1.0.0-linux-x64.tar.gz
+cd MultimediaSDK-1.0.0-linux-x64
+
+# Windows
+# 解压 MultimediaSDK-1.0.0-win-x64.zip
+```
+
 ### CMake 集成
 
-将 SDK 压缩包解压到项目目录，在 `CMakeLists.txt` 中：
+将 SDK 解压到项目目录，在 `CMakeLists.txt` 中：
 
 ```cmake
 cmake_minimum_required(VERSION 3.16)
@@ -128,6 +141,46 @@ target_link_libraries(my_app
     MultimediaSDK::gstrtp
 )
 ```
+
+### 编译与运行
+
+#### Linux
+
+```bash
+# 编译
+mkdir -p build && cd build
+cmake /path/to/your-project \
+    -DMultimediaSDK_DIR="/path/to/MultimediaSDK-1.0.0-linux-x64/cmake" \
+    -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)
+
+# 运行（必须设置环境变量指向 SDK 库和插件路径）
+export GST_PLUGIN_PATH="/path/to/MultimediaSDK-1.0.0-linux-x64/plugins"
+export LD_LIBRARY_PATH="/path/to/MultimediaSDK-1.0.0-linux-x64/lib:${LD_LIBRARY_PATH}"
+./my_app
+```
+
+> 如果未设置 `GST_PLUGIN_PATH`，GStreamer 将找不到 `rtspsrc`、`mp4mux` 等插件。
+> `LD_LIBRARY_PATH` 需指向 SDK 的 `lib/` 目录，否则运行时链接器找不到 GStreamer 的 `.so` 库。
+
+#### Windows
+
+```powershell
+# 编译（Visual Studio Developer Command Prompt）
+mkdir build
+cd build
+cmake \path\to\your-project ^
+    -DMultimediaSDK_DIR="C:\path\to\MultimediaSDK-1.0.0-win-x64\cmake" ^
+    -DCMAKE_BUILD_TYPE=Release
+cmake --build . --config Release
+
+# 运行（必须设置环境变量）
+set GST_PLUGIN_PATH=C:\path\to\MultimediaSDK-1.0.0-win-x64\plugins
+set PATH=C:\path\to\MultimediaSDK-1.0.0-win-x64\lib;%PATH%
+.\Release\my_app.exe
+```
+
+> Windows 下 `PATH` 需要包含 SDK 的 `lib/` 目录，GStreamer 运行时通过 `PATH` 搜索 `.dll` 和通过 `GST_PLUGIN_PATH` 搜索插件。
 
 ### 代码示例：RTSP 拉流录制为 MP4
 
