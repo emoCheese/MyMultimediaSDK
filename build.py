@@ -122,6 +122,13 @@ def build(args):
          f"done"],
         check=False)
 
+    # Set RUNPATH on core libs: $ORIGIN so they can find each other
+    run(["bash", "-c",
+         f"for f in {sdk_dir}/lib/*.so; do "
+         f"  patchelf --set-rpath '$ORIGIN' \"$f\" 2>/dev/null || true; "
+         f"done"],
+        check=False)
+
     # Copy GStreamer tools (gst-plugin-scanner, gst-inspect, etc.)
     run(["bash", "-c",
          f"cp -r {gst_install}/usr/local/bin {sdk_dir}/bin 2>/dev/null || true"],
@@ -129,10 +136,15 @@ def build(args):
     run(["bash", "-c",
          f"cp -r {gst_install}/usr/local/libexec {sdk_dir}/libexec 2>/dev/null || true"],
         check=False)
-    # Set RPATH on scanner so it finds SDK libs
-    for tool in ["gst-plugin-scanner", "gst-inspect-1.0", "gst-launch-1.0"]:
+    # Set RPATH on scanner/tools:
+    #   libexec/gstreamer-1.0/ → $ORIGIN/../../lib  (../../lib = lib/)
+    #   bin/                  → $ORIGIN/../lib       (../lib = lib/)
+    for tool in ["gst-plugin-scanner", "gst-completion-helper"]:
         run(["bash", "-c",
-             f"patchelf --set-rpath '$ORIGIN/../lib' {sdk_dir}/libexec/gstreamer-1.0/{tool} 2>/dev/null || "
+             f"patchelf --set-rpath '$ORIGIN/../../lib' {sdk_dir}/libexec/gstreamer-1.0/{tool} 2>/dev/null || true"],
+            check=False)
+    for tool in ["gst-inspect-1.0", "gst-launch-1.0", "gst-stats-1.0", "gst-typefind-1.0", "gst-transcoder-1.0"]:
+        run(["bash", "-c",
              f"patchelf --set-rpath '$ORIGIN/../lib' {sdk_dir}/bin/{tool} 2>/dev/null || true"],
             check=False)
 
