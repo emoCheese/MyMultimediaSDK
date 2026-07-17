@@ -1,0 +1,145 @@
+#!/usr/bin/env python3
+"""MultimediaSDK build orchestrator."""
+
+import argparse
+import os
+import platform
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parent
+SCRIPTS_DIR = PROJECT_ROOT / "scripts"
+OUTPUT_DIR = PROJECT_ROOT / "output"
+
+
+def run(cmd, **kwargs):
+    print(f"\n==> Running: {' '.join(cmd)}")
+    result = subprocess.run(cmd, cwd=str(PROJECT_ROOT), **kwargs)
+    if result.returncode != 0:
+        print(f"ERROR: command failed with code {result.returncode}")
+        sys.exit(result.returncode)
+
+
+def detect_target(args):
+    if args.target:
+        return args.target
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+    if system == "linux":
+        if machine in ("aarch64", "arm64"):
+            return "linux-arm64"
+        return "linux-x64"
+    elif system == "windows":
+        return "win-x64"
+    else:
+        print(f"ERROR: unsupported platform: {system}/{machine}")
+        sys.exit(1)
+
+
+def validate_target(target):
+    valid = {"linux-x64", "linux-arm64", "win-x64"}
+    if target not in valid:
+        print(f"ERROR: invalid target '{target}'. Must be one of: {valid}")
+        sys.exit(1)
+
+
+def build(args):
+    target = detect_target(args)
+    validate_target(target)
+
+    build_dir = OUTPUT_DIR / "build" / target
+    sdk_dir = OUTPUT_DIR / "sdk" / target
+    ffmpeg_install = build_dir / "ffmpeg-install"
+    gst_install = build_dir / "gst-install"
+    dist_dir = OUTPUT_DIR / "dist"
+
+    if args.clean:
+        for d in [build_dir, sdk_dir, dist_dir]:
+            if d.exists():
+                shutil.rmtree(d)
+                print(f"Cleaned: {d}")
+
+    build_dir.mkdir(parents=True, exist_ok=True)
+    sdk_dir.mkdir(parents=True, exist_ok=True)
+
+    print("\n" + "=" * 40)
+    print("STEP 1/4: Building FFmpeg")
+    print("=" * 40)
+    run(["bash", str(SCRIPTS_DIR / "build-ffmpeg.sh"),
+         str(ffmpeg_install)])
+
+    print("\n" + "=" * 40)
+    print("STEP 2/4: Building GStreamer")
+    print("=" * 40)
+    run(["bash", str(SCRIPTS_DIR / "build-gstreamer.sh"),
+         str(gst_install),
+         str(ffmpeg_install / "lib" / "pkgconfig"),
+         str(ffmpeg_install)])
+
+    print("\n" + "=" * 40)
+    print("STEP 3/4: Merging SDK artifacts")
+    print("=" * 40)
+
+    run(["cp", "-r", str(gst_install / "usr" / "local" / "include"), str(sdk_dir / "include")],
+        check=False)
+
+    (sdk_dir / "lib").mkdir(exist_ok=True)
+    run(["bash", "-c",
+         f"find {gst_install} {ffmpeg_install} -name '*.a' -exec cp {{}} {sdk_dir}/lib/ \\; 2>/dev/null || true"],
+        check=False)
+
+    (sdk_dir / "plugins").mkdir(exist_ok=True)
+    run(["bash", "-c",
+         f"find {gst_install} -name '*.so' -o -name '*.dll' | while read f; do cp \"$f\" {sdk_dir}/plugins/ 2>/dev/null; done || true"],
+        check=False)
+
+    print("  Generating CMake config...")
+    cmake_template = PROJECT_ROOT / "cmake" / "MultimediaSDKConfig.cmake.in"
+    cmake_output = sdk_dir / "cmake" / "MultimediaSDKConfig.cmake"
+    (sdk_dir / "cmake").mkdir(exist_ok=True)
+
+    if cmake_template.exists():
+        content = cmake_template.read_text()
+        content = content.replace("@CMAKE_INSTALL_PREFIX@", str(sdk_dir.resolve()))
+        content = content.replace("@VERSION@", (PROJECT_ROOT / "version.txt").read_text().strip())
+        cmake_output.write_text(content)
+    else:
+        print("WARNING: cmake template not found, skipping CMake config generation")
+
+    if args.package:
+        print("\n" + "=" * 40)
+        print("STEP 4/4: Packaging")
+        print("=" * 40)
+        pkg_script = SCRIPTS_DIR / "package.sh"
+        if pkg_script.exists():
+            run(["bash", str(pkg_script), str(target)])
+        else:
+            print("WARNING: package.sh not found, skipping packaging")
+
+    print("\n" + "=" * 40)
+    print(f"BUILD COMPLETE")
+    print(f"SDK location: {sdk_dir}")
+    print(f"  include/  -> headers")
+    print(f"  lib/      -> static libraries")
+    print(f"  plugins/  -> dynamic plugins")
+    print(f"  cmake/     -> CMake config")
+    print("=" * 40)
+    return 0
+
+
+def main():
+    parser = argparse.ArgumentParser(description="MultimediaSDK build orchestrator")
+    parser.add_argument("--target", choices=["linux-x64", "linux-arm64", "win-x64"],
+                        help="Build target (auto-detect if omitted)")
+    parser.add_argument("--clean", action="store_true", help="Clean build directories before build")
+    parser.add_argument("--package", action="store_true", help="Package SDK after build")
+    parser.add_argument("--verbose", action="store_true", help="Verbose output")
+
+    args = parser.parse_args()
+    build(args)
+
+
+if __name__ == "__main__":
+    main()
