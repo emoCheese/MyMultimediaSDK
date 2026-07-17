@@ -1,0 +1,61 @@
+diff --git a/subprojects/gst-libav/meson.build b/subprojects/gst-libav/meson.build
+index 098b6d8395..e231bc70fb 100644
+--- a/subprojects/gst-libav/meson.build
++++ b/subprojects/gst-libav/meson.build
+@@ -246,7 +246,9 @@ else
+   pathsep = ':'
+ endif
+ subdir('ext/libav')
+-subdir('docs')
++if get_option('doc').allowed()
++  subdir('docs')
++endif
+ subdir('tests')
+ 
+ # Set release date
+diff --git a/subprojects/gst-plugins-bad/meson.build b/subprojects/gst-plugins-bad/meson.build
+index 6394377b5f..118fb1fdf3 100644
+--- a/subprojects/gst-plugins-bad/meson.build
++++ b/subprojects/gst-plugins-bad/meson.build
+@@ -644,7 +644,9 @@ if not meson.is_subproject()
+   meson.add_dist_script('scripts/dist-common-files.py', meson.project_version())
+ endif
+ 
+-subdir('docs')
++if get_option('doc').allowed()
++  subdir('docs')
++endif
+ 
+ plugin_names = []
+ gst_plugins = []
+diff --git a/subprojects/gst-plugins-base/meson.build b/subprojects/gst-plugins-base/meson.build
+index 889158a485..1e5cbf6cd9 100644
+--- a/subprojects/gst-plugins-base/meson.build
++++ b/subprojects/gst-plugins-base/meson.build
+@@ -569,8 +569,9 @@ python3 = import('python').find_installation()
+ subdir('gst-libs')
+ subdir('gst')
+ subdir('ext')
+-subdir('sys')
+-subdir('tools')
++if get_option('doc').allowed()
++  subdir('docs')
++endif
+ subdir('tests')
+ 
+ # xgettext is optional (on Windows for instance)
+diff --git a/subprojects/gst-plugins-good/meson.build b/subprojects/gst-plugins-good/meson.build
+index a0c30ef48a..4c0bd401a1 100644
+--- a/subprojects/gst-plugins-good/meson.build
++++ b/subprojects/gst-plugins-good/meson.build
+@@ -541,7 +541,9 @@ subdir('gst')
+ subdir('sys')
+ subdir('ext')
+ subdir('tests')
+-subdir('docs')
++if get_option('doc').allowed()
++  subdir('docs')
++endif
+ 
+ if have_orcc and orc_targets.length() > 0
+   update_orc_dist_files = find_program('scripts/update-orc-dist-files.py')

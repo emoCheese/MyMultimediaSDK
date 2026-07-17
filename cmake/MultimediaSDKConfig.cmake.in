@@ -3,7 +3,7 @@
 # Usage: find_package(MultimediaSDK REQUIRED)
 
 set(MultimediaSDK_VERSION "@VERSION@")
-set(MultimediaSDK_ROOT_DIR "@CMAKE_INSTALL_PREFIX@")
+get_filename_component(MultimediaSDK_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}" DIRECTORY)
 set(MultimediaSDK_INCLUDE_DIRS "${MultimediaSDK_ROOT_DIR}/include")
 set(MultimediaSDK_LIB_DIR "${MultimediaSDK_ROOT_DIR}/lib")
 set(MultimediaSDK_PLUGIN_DIR "${MultimediaSDK_ROOT_DIR}/plugins")

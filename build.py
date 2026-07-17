@@ -115,7 +115,6 @@ def build(args):
 
     if cmake_template.exists():
         content = cmake_template.read_text()
-        content = content.replace("@CMAKE_INSTALL_PREFIX@", str(sdk_dir.resolve()))
         content = content.replace("@VERSION@", (PROJECT_ROOT / "version.txt").read_text().strip())
         cmake_output.write_text(content)
     else:
