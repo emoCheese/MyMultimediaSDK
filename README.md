@@ -152,7 +152,7 @@ mkdir -p build && cd build
 cmake /path/to/your-project \
     -DMultimediaSDK_DIR="/path/to/MultimediaSDK-1.0.0-linux-x64/cmake" \
     -DCMAKE_BUILD_TYPE=Release
-make -j$(nproc)
+cmake --build . -- -j$(nproc)
 
 # 运行（必须设置环境变量指向 SDK 库和插件路径）
 export GST_PLUGIN_PATH="/path/to/MultimediaSDK-1.0.0-linux-x64/plugins"
