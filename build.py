@@ -89,10 +89,13 @@ def build(args):
     run(["bash", "-c",
          f"find {gst_install} {ffmpeg_install} -name '*.a' -exec cp {{}} {sdk_dir}/lib/ \\; 2>/dev/null || true"],
         check=False)
+    run(["bash", "-c",
+         f"find {gst_install} -name '*.so' -not -path '*/gstreamer-1.0/*' -exec cp {{}} {sdk_dir}/lib/ \\; 2>/dev/null || true"],
+        check=False)
 
     (sdk_dir / "plugins").mkdir(exist_ok=True)
     run(["bash", "-c",
-         f"find {gst_install} -name '*.so' -o -name '*.dll' | while read f; do cp \"$f\" {sdk_dir}/plugins/ 2>/dev/null; done || true"],
+         f"find {gst_install} -path '*/gstreamer-1.0/*.so' -exec cp {{}} {sdk_dir}/plugins/ \\; 2>/dev/null || true"],
         check=False)
 
     print("  Generating CMake config...")

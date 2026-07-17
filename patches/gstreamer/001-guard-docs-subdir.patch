@@ -1,0 +1,15 @@
+diff --git a/subprojects/gst-plugins-good/meson.build b/subprojects/gst-plugins-good/meson.build
+index 1111111..2222222 100644
+--- a/subprojects/gst-plugins-good/meson.build
++++ b/subprojects/gst-plugins-good/meson.build
+@@ -541,7 +541,9 @@ subdir('gst')
+ subdir('sys')
+ subdir('ext')
+ subdir('tests')
+-subdir('docs')
++if get_option('doc').allowed()
++  subdir('docs')
++endif
+ 
+ if have_orcc and orc_targets.length() > 0
+   update_orc_dist_files = find_program('scripts/update-orc-dist-files.py')

@@ -14,7 +14,8 @@ parse_ini_value() {
     awk -F= -v section="$section" -v key="$key" '
         /^\[/{in_section=0}
         $0 == "["section"]" {in_section=1; next}
-        in_section && $1 == key {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); print $2; exit}
+        in_section {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $1); gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2)}
+        in_section && $1 == key {print $2; exit}
     ' "$PROJECT_ROOT/config/modules.ini"
 }
 
@@ -62,7 +63,7 @@ cd "$FFMPEG_SRC"
     --disable-programs \
     --disable-avdevice \
     --disable-postproc \
-    --disable-avfilter \
+    --enable-avfilter \
     --disable-swscale \
     --enable-pic \
     --enable-static \
