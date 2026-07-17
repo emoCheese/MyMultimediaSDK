@@ -118,7 +118,7 @@ def build(args):
     # Set RPATH on plugins: $ORIGIN/../lib so they find our SDK's libraries
     run(["bash", "-c",
          f"for f in {sdk_dir}/plugins/*.so; do "
-         f"  patchelf --set-rpath '\\$ORIGIN/../lib' \"$f\" 2>/dev/null || true; "
+         f"  patchelf --set-rpath '$ORIGIN/../lib' \"$f\" 2>/dev/null || true; "
          f"done"],
         check=False)
 
