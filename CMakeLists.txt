@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.16)
+project(MultimediaSDK VERSION 1.0.0 LANGUAGES C)
+
+set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/output/sdk/${CMAKE_SYSTEM_NAME}"
+    CACHE PATH "SDK install prefix")
+
+install(DIRECTORY "${CMAKE_INSTALL_PREFIX}/"
+        DESTINATION "."
+        USE_SOURCE_PERMISSIONS
+        OPTIONAL)
