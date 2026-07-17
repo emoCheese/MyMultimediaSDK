@@ -8,57 +8,45 @@ set(MultimediaSDK_INCLUDE_DIRS "${MultimediaSDK_ROOT_DIR}/include")
 set(MultimediaSDK_LIB_DIR "${MultimediaSDK_ROOT_DIR}/lib")
 set(MultimediaSDK_PLUGIN_DIR "${MultimediaSDK_ROOT_DIR}/plugins")
 
-# GStreamer core
-add_library(MultimediaSDK::gstreamer STATIC IMPORTED)
+# GLib config is architecture-specific
+set(MultimediaSDK_GLIB_CONFIG_DIR "${MultimediaSDK_LIB_DIR}/glib-2.0/include")
+
+# GStreamer core (shared)
+add_library(MultimediaSDK::gstreamer SHARED IMPORTED)
 set_target_properties(MultimediaSDK::gstreamer PROPERTIES
-    IMPORTED_LOCATION "${MultimediaSDK_LIB_DIR}/libgstreamer-1.0.a"
-    INTERFACE_INCLUDE_DIRECTORIES "${MultimediaSDK_INCLUDE_DIRS}/gstreamer-1.0"
-    INTERFACE_LINK_LIBRARIES "MultimediaSDK::glib;MultimediaSDK::gobject"
+    IMPORTED_LOCATION "${MultimediaSDK_LIB_DIR}/libgstreamer-1.0.so"
+    INTERFACE_INCLUDE_DIRECTORIES "${MultimediaSDK_INCLUDE_DIRS}/gstreamer-1.0;${MultimediaSDK_INCLUDE_DIRS}/glib-2.0;${MultimediaSDK_GLIB_CONFIG_DIR}"
 )
 
-add_library(MultimediaSDK::gstbase STATIC IMPORTED)
+add_library(MultimediaSDK::gstbase SHARED IMPORTED)
 set_target_properties(MultimediaSDK::gstbase PROPERTIES
-    IMPORTED_LOCATION "${MultimediaSDK_LIB_DIR}/libgstbase-1.0.a"
+    IMPORTED_LOCATION "${MultimediaSDK_LIB_DIR}/libgstbase-1.0.so"
     INTERFACE_INCLUDE_DIRECTORIES "${MultimediaSDK_INCLUDE_DIRS}/gstreamer-1.0"
     INTERFACE_LINK_LIBRARIES "MultimediaSDK::gstreamer"
 )
 
-add_library(MultimediaSDK::gstvideo STATIC IMPORTED)
+add_library(MultimediaSDK::gstvideo SHARED IMPORTED)
 set_target_properties(MultimediaSDK::gstvideo PROPERTIES
-    IMPORTED_LOCATION "${MultimediaSDK_LIB_DIR}/libgstvideo-1.0.a"
+    IMPORTED_LOCATION "${MultimediaSDK_LIB_DIR}/libgstvideo-1.0.so"
     INTERFACE_INCLUDE_DIRECTORIES "${MultimediaSDK_INCLUDE_DIRS}/gstreamer-1.0"
     INTERFACE_LINK_LIBRARIES "MultimediaSDK::gstbase"
 )
 
-add_library(MultimediaSDK::gstapp STATIC IMPORTED)
+add_library(MultimediaSDK::gstapp SHARED IMPORTED)
 set_target_properties(MultimediaSDK::gstapp PROPERTIES
-    IMPORTED_LOCATION "${MultimediaSDK_LIB_DIR}/libgstapp-1.0.a"
+    IMPORTED_LOCATION "${MultimediaSDK_LIB_DIR}/libgstapp-1.0.so"
     INTERFACE_INCLUDE_DIRECTORIES "${MultimediaSDK_INCLUDE_DIRS}/gstreamer-1.0"
     INTERFACE_LINK_LIBRARIES "MultimediaSDK::gstbase"
 )
 
-add_library(MultimediaSDK::gstrtp STATIC IMPORTED)
+add_library(MultimediaSDK::gstrtp SHARED IMPORTED)
 set_target_properties(MultimediaSDK::gstrtp PROPERTIES
-    IMPORTED_LOCATION "${MultimediaSDK_LIB_DIR}/libgstrtp-1.0.a"
+    IMPORTED_LOCATION "${MultimediaSDK_LIB_DIR}/libgstrtp-1.0.so"
     INTERFACE_INCLUDE_DIRECTORIES "${MultimediaSDK_INCLUDE_DIRS}/gstreamer-1.0"
     INTERFACE_LINK_LIBRARIES "MultimediaSDK::gstbase"
 )
 
-# GLib
-add_library(MultimediaSDK::glib STATIC IMPORTED)
-set_target_properties(MultimediaSDK::glib PROPERTIES
-    IMPORTED_LOCATION "${MultimediaSDK_LIB_DIR}/libglib-2.0.a"
-    INTERFACE_INCLUDE_DIRECTORIES "${MultimediaSDK_INCLUDE_DIRS}/glib-2.0"
-)
-
-add_library(MultimediaSDK::gobject STATIC IMPORTED)
-set_target_properties(MultimediaSDK::gobject PROPERTIES
-    IMPORTED_LOCATION "${MultimediaSDK_LIB_DIR}/libgobject-2.0.a"
-    INTERFACE_INCLUDE_DIRECTORIES "${MultimediaSDK_INCLUDE_DIRS}/glib-2.0"
-    INTERFACE_LINK_LIBRARIES "MultimediaSDK::glib"
-)
-
-# FFmpeg
+# FFmpeg (static)
 add_library(MultimediaSDK::avcodec STATIC IMPORTED)
 set_target_properties(MultimediaSDK::avcodec PROPERTIES
     IMPORTED_LOCATION "${MultimediaSDK_LIB_DIR}/libavcodec.a"

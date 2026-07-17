@@ -85,7 +85,17 @@ def build(args):
     run(["cp", "-r", str(gst_install / "usr" / "local" / "include"), str(sdk_dir / "include")],
         check=False)
 
+    # Copy system GLib/GObject headers for self-contained SDK
+    for name in ["glib-2.0", "gobject-2.0"]:
+        run(["bash", "-c",
+             f"cp -r /usr/include/{name} {sdk_dir}/include/ 2>/dev/null || true"],
+            check=False)
+
     (sdk_dir / "lib").mkdir(exist_ok=True)
+
+    run(["bash", "-c",
+         f"cp -r /usr/lib/x86_64-linux-gnu/glib-2.0 {sdk_dir}/lib/ 2>/dev/null || true"],
+        check=False)
     run(["bash", "-c",
          f"find {gst_install} {ffmpeg_install} -name '*.a' -exec cp {{}} {sdk_dir}/lib/ \\; 2>/dev/null || true"],
         check=False)
